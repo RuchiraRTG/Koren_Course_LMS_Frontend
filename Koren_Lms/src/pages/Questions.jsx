@@ -225,9 +225,11 @@ const Questions = () => {
                     <span className="px-2 py-1 text-xs font-semibold rounded bg-orange-100 text-orange-800">
                       {question.answerType === 'single' ? 'Single Choice' : 'Multiple Choice'}
                     </span>
-                    <span className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800">
-                      {question.timeLimit}s
-                    </span>
+                    {question.questionType === 'voice' && (
+                      <span className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800">
+                        {question.timeLimit}s
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-lg font-medium text-gray-900">{question.questionText}</h3>
                 </div>
@@ -456,24 +458,26 @@ const Questions = () => {
                       </div>
                     </div>
 
-                    {/* Time Limit */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Time Limit (seconds) *
-                      </label>
-                      <input
-                        type="number"
-                        name="timeLimit"
-                        value={formData.timeLimit}
-                        onChange={handleChange}
-                        required
-                        min="5"
-                        max="300"
-                        className="input-field"
-                        placeholder="30"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Set how long students have to answer this question (5-300 seconds)</p>
-                    </div>
+                    {/* Time Limit - Only for Voice Questions */}
+                    {formData.questionType === 'voice' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Time Limit (seconds) *
+                        </label>
+                        <input
+                          type="number"
+                          name="timeLimit"
+                          value={formData.timeLimit}
+                          onChange={handleChange}
+                          required
+                          min="5"
+                          max="300"
+                          className="input-field"
+                          placeholder="30"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Set how long students have to answer this question (5-300 seconds)</p>
+                      </div>
+                    )}
 
                     {/* Answer Options */}
                     <div>
