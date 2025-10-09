@@ -4,6 +4,7 @@ import {
   Users, 
   BookOpen, 
   FileQuestion, 
+  ClipboardList,
   Settings, 
   LogOut, 
   Menu, 
@@ -21,6 +22,7 @@ const AdminDashboard = () => {
     { name: 'Students', path: '/admin/students', icon: Users },
     { name: 'Courses', path: '/admin/courses', icon: BookOpen },
     { name: 'Questions', path: '/admin/questions', icon: FileQuestion },
+    { name: 'Exams', path: '/admin/exams', icon: ClipboardList },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];
 
