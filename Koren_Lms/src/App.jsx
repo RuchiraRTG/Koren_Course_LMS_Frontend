@@ -1,35 +1,41 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import SignUp from './pages/SignUp';
+import SignIn from './pages/SignIn';
+import Home from './pages/Home';
+import AdminDashboard from './pages/AdminDashboard';
+import DashboardOverview from './pages/DashboardOverview';
+import Students from './pages/Students';
+import Questions from './pages/Questions';
+import Exams from './pages/Exams';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Router>
+      <Routes>
+        {/* Auth Routes */}
+        <Route path="/" element={<Navigate to="/signin" replace />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/signin" element={<SignIn />} />
+        
+        {/* Student Routes */}
+        <Route path="/home" element={<Home />} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminDashboard />}>
+          <Route index element={<DashboardOverview />} />
+          <Route path="students" element={<Students />} />
+          <Route path="questions" element={<Questions />} />
+          <Route path="exams" element={<Exams />} />
+          <Route path="courses" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Courses Management</h2><p className="text-gray-600 mt-2">Coming soon...</p></div>} />
+          <Route path="settings" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Settings</h2><p className="text-gray-600 mt-2">Coming soon...</p></div>} />
+        </Route>
+        
+        {/* Catch all - redirect to signin */}
+        <Route path="*" element={<Navigate to="/signin" replace />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
