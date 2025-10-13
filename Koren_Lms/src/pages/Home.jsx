@@ -1,26 +1,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Users, Award, BarChart3, Bell, Search, LogOut } from 'lucide-react';
+import { BookOpen, Users, Award, BarChart3, Bell, Search, LogOut, FileQuestion } from 'lucide-react';
 
 const Home = () => {
-//   const stats = [
-//     { title: 'Total Courses', value: '12', icon: BookOpen, color: 'bg-blue-500' },
-//     { title: 'Active Students', value: '248', icon: Users, color: 'bg-green-500' },
-//     { title: 'Completed Lessons', value: '1,847', icon: Award, color: 'bg-purple-500' },
-//     { title: 'Progress Rate', value: '85%', icon: BarChart3, color: 'bg-orange-500' },
-//   ];
+  const stats = [
+    { title: 'Total Courses', value: '12', icon: BookOpen, color: 'bg-blue-500' },
+    { title: 'Active Students', value: '248', icon: Users, color: 'bg-green-500' },
+    { title: 'Completed Lessons', value: '1,847', icon: Award, color: 'bg-purple-500' },
+    { title: 'Progress Rate', value: '85%', icon: BarChart3, color: 'bg-orange-500' },
+  ];
 
-//   const recentCourses = [
-//     { id: 1, title: '한글 기초 (Hangul Basics)', progress: 75, level: 'Beginner' },
-//     { id: 2, title: '일상 대화 (Daily Conversation)', progress: 45, level: 'Intermediate' },
-//     { id: 3, title: '비즈니스 한국어 (Business Korean)', progress: 30, level: 'Advanced' },
-//   ];
+  const recentCourses = [
+    { id: 1, title: '한글 기초 (Hangul Basics)', progress: 75, level: 'Beginner' },
+    { id: 2, title: '일상 대화 (Daily Conversation)', progress: 45, level: 'Intermediate' },
+    { id: 3, title: '비즈니스 한국어 (Business Korean)', progress: 30, level: 'Advanced' },
+  ];
 
-//   const announcements = [
-//     { id: 1, title: 'New Korean Culture Course Available', date: '2 days ago' },
-//     { id: 2, title: 'Weekly Quiz: Korean Grammar', date: '1 week ago' },
-//     { id: 3, title: 'Study Group Meeting - Saturday 2PM', date: '1 week ago' },
-//   ];
+  const announcements = [
+    { id: 1, title: 'New Korean Culture Course Available', date: '2 days ago' },
+    { id: 2, title: 'Weekly Quiz: Korean Grammar', date: '1 week ago' },
+    { id: 3, title: 'Study Group Meeting - Saturday 2PM', date: '1 week ago' },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -167,6 +167,11 @@ const Home = () => {
         <div className="mt-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link to="/mock-exam" className="card text-center hover:bg-primary-50 transition-colors border-2 border-primary-200">
+              <FileQuestion className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+              <p className="text-sm font-bold text-primary-700">Take Mock Exam</p>
+            </Link>
+            
             <Link to="/courses" className="card text-center hover:bg-gray-50 transition-colors">
               <BookOpen className="h-8 w-8 text-primary-600 mx-auto mb-2" />
               <p className="text-sm font-medium text-gray-900">Browse Courses</p>
