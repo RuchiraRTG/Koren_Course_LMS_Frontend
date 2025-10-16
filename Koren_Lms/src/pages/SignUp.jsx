@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, Loader } from 'lucide-react';
 
 const SignUp = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     nicNumber: '',
     phoneNumber: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
+  const [apiErrors, setApiErrors] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -65,20 +70,77 @@ const SignUp = () => {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = validateForm();
+    
+    // Clear previous messages
+    setErrors({});
+    setApiErrors([]);
+    setSuccessMessage('');
+    
+    const validationErrors = validateForm();
 
-    if (Object.keys(newErrors).length === 0) {
-      // Here you would typically send the data to your backend
-      console.log('Sign up data:', formData);
-      // For now, just navigate to sign in page
-      navigate('/signin');
+    if (Object.keys(validationErrors).length === 0) {
+      setIsLoading(true);
+      
+      try {
+        // Prepare request body according to API specification
+        const requestBody = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          nic_number: formData.nicNumber,
+          phone_number: formData.phoneNumber,
+          email: formData.email,
+          password: formData.password,
+          confirm_password: formData.confirmPassword
+        };
+
+        const response = await fetch('http://localhost/signup.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setSuccessMessage(data.message);
+          // Show success message for 2 seconds then navigate
+          setTimeout(() => {
+            navigate('/signin', { 
+              state: { 
+                message: 'Account created successfully! Please sign in with your credentials.',
+                email: formData.email
+              }
+            });
+          }, 2000);
+        } else {
+          // Handle API validation errors
+          if (data.errors && data.errors.length > 0) {
+            setApiErrors(data.errors);
+          } else if (data.message) {
+            setApiErrors([data.message]);
+          }
+        }
+      } catch (error) {
+        console.error('API Error:', error);
+        setApiErrors(['Network error. Please check your connection and try again.']);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
-      setErrors(newErrors);
+      setErrors(validationErrors);
     }
   };
 
@@ -98,6 +160,39 @@ const SignUp = () => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-green-800">
+                    {successMessage}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* API Errors */}
+          {apiErrors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Please correct the following errors:
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <ul className="list-disc space-y-1 pl-5">
+                      {apiErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="card">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
@@ -210,12 +305,49 @@ const SignUp = () => {
               {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
 
+            <div className="mt-4">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`input-field pr-10 ${errors.confirmPassword ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
+                  placeholder="Confirm your password"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+            </div>
+
             <div className="mt-6">
               <button
                 type="submit"
-                className="w-full btn-primary"
+                disabled={isLoading}
+                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Create Account
+                {isLoading ? (
+                  <>
+                    <Loader className="animate-spin h-4 w-4 mr-2" />
+                    Creating Account...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
               </button>
             </div>
 

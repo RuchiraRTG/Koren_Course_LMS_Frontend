@@ -1,19 +1,33 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+
+// Backend endpoint for the provided student.php
+const API_BASE = 'http://localhost/student.php';
+
+// simple debounce hook (defined at module scope)
+function useDebounce(value, delay = 400) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
 const Students = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [students, setStudents] = useState([
-    { id: 1, firstName: 'John', lastName: 'Doe',   batchNumber: 'BATCH-2024-01', email: 'john.doe@email.com', phone: '0771234567', nicNumber: '199512345678' },
-    { id: 2, firstName: 'Jane', lastName: 'Smith',   batchNumber: 'BATCH-2024-01', email: 'jane.smith@email.com', phone: '0779876543', nicNumber: '199612345678' },
-    { id: 3, firstName: 'Mike', lastName: 'Johnson',   batchNumber: 'BATCH-2024-02', email: 'mike.j@email.com', phone: '0765432198', nicNumber: '199712345678' },
-  ]);
+  const [students, setStudents] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [listError, setListError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    
     batchNumber: '',
     email: '',
     phone: '',
@@ -21,6 +35,40 @@ const Students = () => {
   });
 
   const [editingStudent, setEditingStudent] = useState(null);
+
+  // Debounce search term to limit requests
+  const debouncedSearch = useDebounce(searchTerm, 400);
+
+  // Load students from backend when search changes
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = async () => {
+      setIsLoading(true);
+      setListError('');
+      try {
+        const params = new URLSearchParams({ action: 'list' });
+        if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+        const res = await fetch(`${API_BASE}?${params.toString()}`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        const data = await safeJson(res);
+        if (!res.ok || !data?.success) {
+          throw new Error(data?.message || 'Failed to load students');
+        }
+        setStudents(Array.isArray(data.data) ? data.data : []);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('List load error:', err);
+          setListError(err.message || 'Error loading students');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+    return () => controller.abort();
+  }, [debouncedSearch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,47 +78,80 @@ const Students = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (editingStudent) {
-      // Update existing student
-      setStudents(students.map(student => 
-        student.id === editingStudent.id 
-          ? { ...formData, id: student.id }
-          : student
-      ));
-    } else {
-      // Add new student
-      const newStudent = {
-        ...formData,
-        id: students.length + 1
-      };
-      setStudents([...students, newStudent]);
+    setSaveError('');
+    setInfoMessage('');
+    setIsSaving(true);
+
+    try {
+      const isEdit = Boolean(editingStudent?.id);
+      const payload = isEdit ? { ...formData, id: editingStudent.id } : { ...formData };
+      const res = await fetch(API_BASE, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await safeJson(res);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || (isEdit ? 'Failed to update student' : 'Failed to create student'));
+      }
+
+      setInfoMessage(isEdit ? 'Student updated successfully' : 'Student created successfully');
+      handleCloseModal();
+      // Refresh list
+      await refreshList();
+    } catch (err) {
+      console.error('Save error:', err);
+      setSaveError(err.message || 'Something went wrong');
+    } finally {
+      setIsSaving(false);
     }
-    
-    // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '', 
-      batchNumber: '',
-      email: '',
-      phone: '',
-      nicNumber: ''
-    });
-    setEditingStudent(null);
-    setShowAddModal(false);
   };
 
   const handleEdit = (student) => {
     setEditingStudent(student);
-    setFormData(student);
+    // Only map editable fields to the form
+    setFormData({
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      batchNumber: student.batchNumber || '',
+      email: student.email || '',
+      phone: student.phone || '',
+      nicNumber: student.nicNumber || '',
+    });
     setShowAddModal(true);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      setStudents(students.filter(student => student.id !== id));
+  const handleDelete = async (id) => {
+    if (!id) return;
+    if (!window.confirm('Are you sure you want to delete this student?')) return;
+    setDeletingId(id);
+    setInfoMessage('');
+    try {
+      let res = await fetch(`${API_BASE}?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      let data = await safeJson(res);
+      if (!res.ok || !data?.success) {
+        // Fallback for servers that don't allow DELETE: use POST?action=delete
+        const res2 = await fetch(`${API_BASE}?action=delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+        const data2 = await safeJson(res2);
+        if (!res2.ok || !data2?.success) {
+          throw new Error(data2?.message || data?.message || 'Failed to delete student');
+        }
+      }
+      setInfoMessage('Student deleted successfully');
+      await refreshList();
+    } catch (err) {
+      console.error('Delete error:', err);
+      setListError(err.message || 'Delete failed');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -87,12 +168,32 @@ const Students = () => {
     });
   };
 
-  const filteredStudents = students.filter(student =>
-    student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.batchNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = useMemo(() => students, [students]);
+
+  async function refreshList() {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams({ action: 'list' });
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+      const res = await fetch(`${API_BASE}?${params.toString()}`);
+      const data = await safeJson(res);
+      if (!res.ok || !data?.success) throw new Error(data?.message || 'Failed to reload');
+      setStudents(Array.isArray(data.data) ? data.data : []);
+    } catch (err) {
+      console.error('Refresh error:', err);
+      setListError(err.message || 'Error refreshing');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function safeJson(res) {
+    try {
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
 
   return (
     <div>
@@ -124,6 +225,18 @@ const Students = () => {
         </button>
       </div>
 
+      {/* Messages */}
+      {infoMessage && (
+        <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-3 text-green-800 text-sm">
+          {infoMessage}
+        </div>
+      )}
+      {listError && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-3 text-red-800 text-sm">
+          {listError}
+        </div>
+      )}
+
       {/* Students Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -146,7 +259,13 @@ const Students = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredStudents.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                    <Loader2 className="inline h-5 w-5 mr-2 animate-spin" /> Loading students...
+                  </td>
+                </tr>
+              ) : filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                     No students found
@@ -177,14 +296,21 @@ const Students = () => {
                       <button
                         onClick={() => handleEdit(student)}
                         className="text-primary-600 hover:text-primary-900 mr-4"
+                        title="Edit"
                       >
                         <Edit2 className="h-5 w-5 inline" />
                       </button>
                       <button
                         onClick={() => handleDelete(student.id)}
-                        className="text-red-600 hover:text-red-900"
+                        className={`text-red-600 hover:text-red-900 ${deletingId === student.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={deletingId === student.id}
+                        title="Delete"
                       >
-                        <Trash2 className="h-5 w-5 inline" />
+                        {deletingId === student.id ? (
+                          <Loader2 className="h-5 w-5 inline animate-spin" />
+                        ) : (
+                          <Trash2 className="h-5 w-5 inline" />
+                        )}
                       </button>
                     </td>
                   </tr>
@@ -207,10 +333,16 @@ const Students = () => {
                   <h3 className="text-lg font-medium text-gray-900">
                     {editingStudent ? 'Edit Student' : 'Add New Student'}
                   </h3>
-                  <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600">
+                  <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600" aria-label="Close">
                     <X className="h-6 w-6" />
                   </button>
                 </div>
+
+                {saveError && (
+                  <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-3 text-red-800 text-sm">
+                    {saveError}
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -243,8 +375,6 @@ const Students = () => {
                         placeholder="Enter last name"
                       />
                     </div>
-
-                     
 
                     <div className="sm:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -312,13 +442,16 @@ const Students = () => {
                       type="button"
                       onClick={handleCloseModal}
                       className="btn-secondary"
+                      disabled={isSaving}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="btn-primary"
+                      className={`btn-primary inline-flex items-center ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      disabled={isSaving}
                     >
+                      {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                       {editingStudent ? 'Update Student' : 'Add Student'}
                     </button>
                   </div>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Clock, Image as ImageIcon, Music } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Edit2, Trash2, X, Clock, Image as ImageIcon, Music, Loader, AlertCircle } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
 import AudioUpload from '../components/AudioUpload';
 
@@ -7,6 +7,10 @@ const Questions = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const [formData, setFormData] = useState({
     questionText: '',
@@ -28,6 +32,63 @@ const Questions = () => {
   });
 
   const [editingQuestion, setEditingQuestion] = useState(null);
+
+  // API Base URL - Update this to match your backend location
+  // Common options:
+  // - 'http://localhost/questions.php' (XAMPP/WAMP in htdocs root)
+  // - 'http://localhost/api/questions.php' (if in api folder)
+  // - 'http://localhost:8000/questions.php' (if using PHP built-in server)
+  // - 'http://localhost:80/korean-lms/questions.php' (if in subfolder)
+  const API_URL = 'http://localhost/questions.php';
+
+  // Fetch questions on component mount
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  // Fetch all questions from backend
+  const fetchQuestions = async () => {
+    setIsLoading(true);
+    setApiError('');
+    try {
+      console.log('Fetching questions from:', `${API_URL}?action=list`);
+      
+      const response = await fetch(`${API_URL}?action=list`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Received data:', data);
+
+      if (data.success) {
+        setQuestions(data.data || []);
+      } else {
+        setApiError(data.message || 'Failed to fetch questions');
+      }
+    } catch (error) {
+      console.error('Fetch questions error:', error);
+      
+      // More specific error messages
+      if (error.message.includes('Failed to fetch')) {
+        setApiError(`Cannot connect to API at ${API_URL}. Make sure:\n1. Your backend server is running\n2. CORS is enabled in questions.php\n3. The API URL is correct`);
+      } else if (error.message.includes('Unexpected token')) {
+        setApiError('Invalid response from server. Check if questions.php is returning valid JSON.');
+      } else {
+        setApiError(`Network error: ${error.message}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -75,38 +136,98 @@ const Questions = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Clear messages
+    setApiError('');
+    setSuccessMessage('');
     
     // Validation
     if (formData.questionType === 'mcq' && formData.correctAnswers.length === 0) {
-      alert('Please select at least one correct answer');
+      setApiError('Please select at least one correct answer');
       return;
     }
 
     if (formData.questionType === 'voice' && !formData.audioLink) {
-      alert('Please provide an audio link for voice questions');
+      setApiError('Please provide an audio link for voice questions');
+      return;
+    }
+
+    if (formData.questionType === 'voice' && (formData.timeLimit < 5 || formData.timeLimit > 300)) {
+      setApiError('Time limit must be between 5 and 300 seconds for voice questions');
+      return;
+    }
+
+    // Validate that all options have text
+    const hasEmptyOption = formData.options.some(option => !option.text.trim());
+    if (hasEmptyOption) {
+      setApiError('All 4 options must have text');
       return;
     }
     
-    if (editingQuestion) {
-      // Update existing question
-      setQuestions(questions.map(question => 
-        question.id === editingQuestion.id 
-          ? { ...formData, id: question.id }
-          : question
-      ));
-    } else {
-      // Add new question
-      const newQuestion = {
-        ...formData,
-        id: Date.now()
-      };
-      setQuestions([...questions, newQuestion]);
-    }
+    setIsSubmitting(true);
     
-    // Reset form
-    resetForm();
+    try {
+      let response;
+      const payload = {
+        questionText: formData.questionText,
+        questionType: formData.questionType,
+        questionFormat: formData.questionFormat || 'normal',
+        questionImage: formData.questionImage || null,
+        answerType: formData.answerType,
+        options: formData.options,
+        correctAnswers: formData.correctAnswers,
+        audioLink: formData.audioLink || null,
+        timeLimit: formData.questionType === 'voice' ? parseInt(formData.timeLimit) : 0,
+        difficulty: formData.difficulty,
+        category: formData.category
+      };
+
+      if (editingQuestion) {
+        // Update existing question
+        response = await fetch(API_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...payload,
+            id: editingQuestion.id
+          })
+        });
+      } else {
+        // Create new question
+        response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccessMessage(data.message || (editingQuestion ? 'Question updated successfully' : 'Question created successfully'));
+        
+        // Refresh questions list
+        await fetchQuestions();
+        
+        // Reset form and close modal after a short delay
+        setTimeout(() => {
+          resetForm();
+        }, 1500);
+      } else {
+        setApiError(data.message || 'Failed to save question');
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      setApiError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -130,6 +251,8 @@ const Questions = () => {
     });
     setEditingQuestion(null);
     setShowAddModal(false);
+    setApiError('');
+    setSuccessMessage('');
   };
 
   const handleEdit = (question) => {
@@ -138,9 +261,35 @@ const Questions = () => {
     setShowAddModal(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this question?')) {
-      setQuestions(questions.filter(question => question.id !== id));
+      setApiError('');
+      try {
+        const response = await fetch(`${API_URL}?id=${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setSuccessMessage('Question deleted successfully');
+          // Refresh questions list
+          await fetchQuestions();
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            setSuccessMessage('');
+          }, 3000);
+        } else {
+          setApiError(data.message || 'Failed to delete question');
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        setApiError('Network error. Failed to delete question.');
+      }
     }
   };
 
@@ -193,9 +342,40 @@ const Questions = () => {
         </button>
       </div>
 
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+          <p className="text-sm font-medium text-green-800">{successMessage}</p>
+        </div>
+      )}
+
+      {/* API Error Message */}
+      {apiError && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-red-800 mb-1">Connection Error</h3>
+              <div className="text-sm text-red-700 whitespace-pre-line">{apiError}</div>
+              <button
+                onClick={fetchQuestions}
+                className="mt-3 text-sm text-red-800 hover:text-red-900 font-medium underline"
+              >
+                🔄 Retry Connection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Questions Grid */}
       <div className="grid grid-cols-1 gap-4">
-        {filteredQuestions.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <Loader className="animate-spin h-8 w-8 text-primary-600 mx-auto mb-4" />
+            <p className="text-gray-500">Loading questions...</p>
+          </div>
+        ) : filteredQuestions.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
             No questions found. Click "Add Question" to create one.
           </div>
@@ -225,7 +405,7 @@ const Questions = () => {
                     <span className="px-2 py-1 text-xs font-semibold rounded bg-orange-100 text-orange-800">
                       {question.answerType === 'single' ? 'Single Choice' : 'Multiple Choice'}
                     </span>
-                    {question.questionType === 'voice' && (
+                    {question.questionType === 'voice' && question.timeLimit && (
                       <span className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800">
                         {question.timeLimit}s
                       </span>
@@ -311,6 +491,40 @@ const Questions = () => {
                   })}
                 </div>
               )}
+
+              {/* Voice Question Options */}
+              {question.questionType === 'voice' && question.options && (
+                <div className="mt-4 space-y-2">
+                  {question.options.map((option, index) => {
+                    const isCorrect = question.correctAnswers?.includes(index);
+                    return (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border ${
+                          isCorrect
+                            ? 'bg-green-50 border-green-300'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-gray-700">{String.fromCharCode(65 + index)}.</span>
+                          {option.image && (
+                            <img 
+                              src={option.image} 
+                              alt={`Option ${index + 1}`}
+                              className="h-16 w-16 object-cover rounded"
+                            />
+                          )}
+                          <span className="text-gray-900 flex-1">{option.text}</span>
+                          {isCorrect && (
+                            <span className="ml-auto text-green-600 text-sm font-medium">✓ Correct</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ))
         )}
@@ -332,6 +546,21 @@ const Questions = () => {
                     <X className="h-6 w-6" />
                   </button>
                 </div>
+
+                {/* Modal Success Message */}
+                {successMessage && (
+                  <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+                    <p className="text-sm font-medium text-green-800">{successMessage}</p>
+                  </div>
+                )}
+
+                {/* Modal Error Message */}
+                {apiError && (
+                  <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4 flex items-start">
+                    <AlertCircle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-red-800">{apiError}</p>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-4">
@@ -537,14 +766,23 @@ const Questions = () => {
                       type="button"
                       onClick={resetForm}
                       className="btn-secondary"
+                      disabled={isSubmitting}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="btn-primary"
+                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                      disabled={isSubmitting}
                     >
-                      {editingQuestion ? 'Update Question' : 'Add Question'}
+                      {isSubmitting ? (
+                        <>
+                          <Loader className="animate-spin h-4 w-4 mr-2" />
+                          {editingQuestion ? 'Updating...' : 'Saving...'}
+                        </>
+                      ) : (
+                        editingQuestion ? 'Update Question' : 'Save Question'
+                      )}
                     </button>
                   </div>
                 </form>
