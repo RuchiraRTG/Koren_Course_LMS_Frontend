@@ -8,6 +8,8 @@ const MockExam = () => {
     examType: 'both', // 'mcq', 'voice', or 'both'
     numberOfQuestions: '20' // '20', '30', or '50'
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -17,9 +19,40 @@ const MockExam = () => {
     }));
   };
 
-  const handleStartExam = () => {
-    // Navigate to take exam page with configuration
-    navigate('/take-exam', { state: examConfig });
+  const handleStartExam = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost/takeExam.php?action=startExam`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies/session
+        body: JSON.stringify({
+          examType: examConfig.examType,
+          numberOfQuestions: parseInt(examConfig.numberOfQuestions, 10)
+        })
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to start exam');
+      }
+
+      const payload = data.data;
+      navigate('/take-exam', {
+        state: {
+          attemptToken: payload.attemptToken,
+          examType: payload.examType,
+          numberOfQuestions: payload.numberOfQuestions,
+          questions: payload.questions,
+          startedVia: 'mockExam'
+        }
+      });
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -234,6 +267,12 @@ const MockExam = () => {
                   </span>
                 </div>
               </div>
+
+              {error && (
+                <div className="mt-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -241,14 +280,16 @@ const MockExam = () => {
               <button
                 onClick={() => navigate('/home')}
                 className="flex-1 btn-secondary text-sm sm:text-base"
+                disabled={loading}
               >
                 Cancel
               </button>
               <button
                 onClick={handleStartExam}
-                className="flex-1 btn-primary text-sm sm:text-base"
+                className={`flex-1 btn-primary text-sm sm:text-base ${loading ? 'opacity-75 cursor-wait' : ''}`}
+                disabled={loading}
               >
-                Start Exam
+                {loading ? 'Starting…' : 'Start Exam'}
               </button>
             </div>
           </div>
