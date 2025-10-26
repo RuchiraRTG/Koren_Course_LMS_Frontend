@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -9,13 +9,50 @@ import {
   LogOut, 
   Menu, 
   X,
-  ChevronDown
+  ChevronDown,
+  AlertCircle
 } from 'lucide-react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is authenticated and is an admin
+    const checkAdminAccess = () => {
+      const user = sessionStorage.getItem('user') || localStorage.getItem('user');
+      
+      if (!user) {
+        // Not logged in - redirect to signin
+        navigate('/signin');
+        return;
+      }
+
+      try {
+        const userData = JSON.parse(user);
+        // Check if user role is 'admin'
+        const role = userData.role || sessionStorage.getItem('role') || localStorage.getItem('role');
+        
+        if (role === 'admin') {
+          setIsAdmin(true);
+        } else {
+          // Not an admin - redirect to home
+          navigate('/home');
+        }
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        navigate('/signin');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdminAccess();
+  }, [navigate]);
 
   const menuItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
@@ -32,6 +69,39 @@ const AdminDashboard = () => {
     }
     return location.pathname.startsWith(path);
   };
+
+  // Show loading while checking admin status
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if not admin
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-center bg-white p-8 rounded-lg shadow-lg max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-6">
+            You do not have permission to access the admin panel. Only administrators can access this area.
+          </p>
+          <button
+            onClick={() => navigate('/home')}
+            className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 font-medium"
+          >
+            Go Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">

@@ -1,8 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Award, BarChart3, Bell, Search, LogOut, FileQuestion } from 'lucide-react';
+import LMSLogo from '../assets/LMSLOGO.png';
+import { logoutUser } from '../services/authService';
 
 const Home = () => {
+  const navigate = useNavigate();
   const stats = [
     { title: 'Total Courses', value: '12', icon: BookOpen, color: 'bg-blue-500' },
     { title: 'Active Students', value: '248', icon: Users, color: 'bg-green-500' },
@@ -23,15 +26,13 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen" style={{ backgroundColor: '#fffdfdff' }}>
       {/* Navigation Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-primary-600 rounded flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-white" />
-              </div>
+              <img src={LMSLogo} alt="LMS Logo" className="h-10 w-10 object-contain" />
               <h1 className="ml-3 text-xl font-bold text-gray-900">Korean LMS</h1>
             </div>
             
@@ -51,11 +52,20 @@ const Home = () => {
               </button>
               
               <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-700">JD</span>
-                </div>
-                <span className="text-sm font-medium text-gray-700">John Doe</span>
-                <button className="text-gray-400 hover:text-gray-600">
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="flex items-center space-x-2 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors">
+                    <span className="text-sm font-medium text-gray-700">S</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Student</span>
+                </button>
+                <button 
+                  onClick={() => logoutUser(navigate)}
+                  className="text-gray-400 hover:text-red-600 transition-colors"
+                  title="Sign Out"
+                >
                   <LogOut className="h-5 w-5" />
                 </button>
               </div>
@@ -64,20 +74,12 @@ const Home = () => {
         </div>
       </header>
 
-      Main Content
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            안녕하세요! Welcome back, John 👋
-          </h2>
-          <p className="text-gray-600">
-            Continue your Korean language learning journey
-          </p>
-        </div>
-
+      
+  <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+         
+        
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
             <div key={index} className="card">
               <div className="flex items-center">

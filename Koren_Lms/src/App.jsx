@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import SignUp from './pages/SignUp';
 import SignIn from './pages/SignIn';
 import Home from './pages/Home';
+import UserProfile from './pages/UserProfile';
 import MockExam from './pages/MockExam';
 import TakeExam from './pages/TakeExam';
 import AdminDashboard from './pages/AdminDashboard';
@@ -22,6 +23,7 @@ function App() {
         
         {/* Student Routes */}
         <Route path="/home" element={<Home />} />
+        <Route path="/profile" element={<UserProfile />} />
         <Route path="/mock-exam" element={<MockExam />} />
         <Route path="/take-exam" element={<TakeExam />} />
         

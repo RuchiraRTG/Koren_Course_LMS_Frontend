@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle, FileQuestion, Music } from 'lucide-react';
+import { API_ENDPOINTS, apiRequest } from '../config/api';
 
 const TakeExam = () => {
   const navigate = useNavigate();
@@ -71,32 +72,45 @@ const TakeExam = () => {
 
     setError('');
     setSubmitting(true);
+    
     try {
+      // Prepare answers array with question_id and selected_index
       const answers = questions.map(q => ({
         question_id: q.id,
         selected_index: userAnswers[q.id] !== undefined ? userAnswers[q.id] : null
       }));
 
-      const res = await fetch(`http://localhost/takeExam.php?action=submitAnswers`, {
+      console.log('Submitting exam with:', {
+        attemptToken,
+        answersCount: answers.length
+      });
+
+      // Make API request to submit answers
+      const data = await apiRequest(`${API_ENDPOINTS.TAKE_EXAM}?action=submitAnswers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Include cookies/session
         body: JSON.stringify({
           attemptToken,
           answers
         })
       });
 
-      const data = await res.json();
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to submit answers');
-      }
+      console.log('Submission successful:', data);
 
+      // Store results data
       const payload = data.data;
       setResultsData(payload);
       setShowResults(true);
+
+      // Log if exam result was saved
+      if (payload.examResultId) {
+        console.log('Exam result saved with ID:', payload.examResultId);
+      } else {
+        console.log('Exam result not saved (may be guest user or mock exam)');
+      }
+
     } catch (err) {
-      setError(err.message || 'Something went wrong');
+      console.error('Submit error:', err);
+      setError(err.message || 'Failed to submit exam. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -326,9 +340,27 @@ const TakeExam = () => {
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
                 Exam Completed!
               </h2>
-              <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
+              <p className="text-sm sm:text-base text-gray-600 mb-4">
                 Here are your results
               </p>
+
+              {/* Success Message if result was saved */}
+              {resultsData.examResultId && (
+                <div className="mb-4 p-3 rounded-md bg-green-50 border border-green-200">
+                  <p className="text-sm text-green-700">
+                    ✓ Your exam result has been saved successfully!
+                  </p>
+                </div>
+              )}
+              {/* Info if result was NOT saved (likely guest or not a student) */}
+              {!resultsData.examResultId && (
+                <div className="mb-4 p-3 rounded-md bg-yellow-50 border border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    Result was not saved to your account. If you want your score to be recorded,
+                    please sign in with a student account and submit again.
+                  </p>
+                </div>
+              )}
 
               {/* Score Display */}
               <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -380,3 +412,6 @@ const TakeExam = () => {
 };
 
 export default TakeExam;
+
+
+ 

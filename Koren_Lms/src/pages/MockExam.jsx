@@ -96,41 +96,7 @@ const MockExam = () => {
                 Select Exam Type
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                {/* Both Option */}
-                <label className={`relative flex flex-col items-center p-4 sm:p-6 border-2 rounded-lg cursor-pointer transition-all ${
-                  examConfig.examType === 'both'
-                    ? 'border-primary-600 bg-primary-50'
-                    : 'border-gray-200 hover:border-primary-300'
-                }`}>
-                  <input
-                    type="radio"
-                    name="examType"
-                    value="both"
-                    checked={examConfig.examType === 'both'}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <div className={`mb-2 sm:mb-3 p-2 sm:p-3 rounded-full ${
-                    examConfig.examType === 'both' ? 'bg-primary-100' : 'bg-gray-100'
-                  }`}>
-                    <FileQuestion className={`h-6 w-6 sm:h-8 sm:w-8 ${
-                      examConfig.examType === 'both' ? 'text-primary-600' : 'text-gray-500'
-                    }`} />
-                  </div>
-                  <span className="text-sm sm:text-base font-semibold text-gray-900 mb-1">
-                    MCQ & Voice
-                  </span>
-                  <span className="text-xs sm:text-sm text-gray-500 text-center">
-                    Mix of both question types
-                  </span>
-                  {examConfig.examType === 'both' && (
-                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-                      <div className="bg-primary-600 rounded-full p-1">
-                        <CheckSquare className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                      </div>
-                    </div>
-                  )}
-                </label>
+                 
 
                 {/* MCQ Only Option */}
                 <label className={`relative flex flex-col items-center p-4 sm:p-6 border-2 rounded-lg cursor-pointer transition-all ${
@@ -207,12 +173,12 @@ const MockExam = () => {
             </div>
 
             {/* Number of Questions Selection */}
-            <div>
+            <div className="pt-8 sm:pt-12 border-t border-gray-200">
               <label className="block text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                 Number of Questions
               </label>
               <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                {['20', '30', '50'].map((num) => (
+                {['20', '40'].map((num) => (
                   <label
                     key={num}
                     className={`flex items-center justify-center p-4 sm:p-6 border-2 rounded-lg cursor-pointer transition-all ${

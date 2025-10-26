@@ -31,7 +31,8 @@ const Students = () => {
     batchNumber: '',
     email: '',
     phone: '',
-    nicNumber: ''
+    nicNumber: '',
+    password: ''
   });
 
   const [editingStudent, setEditingStudent] = useState(null);
@@ -111,7 +112,7 @@ const Students = () => {
 
   const handleEdit = (student) => {
     setEditingStudent(student);
-    // Only map editable fields to the form
+    // Only map editable fields to the form (password should be empty for edit)
     setFormData({
       firstName: student.firstName || '',
       lastName: student.lastName || '',
@@ -119,6 +120,7 @@ const Students = () => {
       email: student.email || '',
       phone: student.phone || '',
       nicNumber: student.nicNumber || '',
+      password: '' // Empty password for edit (optional update)
     });
     setShowAddModal(true);
   };
@@ -164,7 +166,8 @@ const Students = () => {
       batchNumber: '',
       email: '',
       phone: '',
-      nicNumber: ''
+      nicNumber: '',
+      password: ''
     });
   };
 
@@ -432,7 +435,23 @@ const Students = () => {
                         onChange={handleChange}
                         required
                         className="input-field"
-                        placeholder="Enter NIC number"
+                        placeholder="Enter NIC number (9 digits + V/X or 12 digits)"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Password {editingStudent && <span className="text-gray-500 text-xs">(Leave blank to keep current password)</span>}
+                      </label>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required={!editingStudent}
+                        className="input-field"
+                        placeholder={editingStudent ? "Enter new password (optional)" : "Enter password (min 6 characters)"}
+                        minLength={formData.password ? 6 : undefined}
                       />
                     </div>
                   </div>
