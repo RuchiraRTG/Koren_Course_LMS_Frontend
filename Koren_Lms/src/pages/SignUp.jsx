@@ -334,7 +334,7 @@ const SignUp = () => {
               {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
             </div>
 
-            <div className="mt-6">
+            {/* <div className="mt-6">
               <button
                 type="submit"
                 disabled={isLoading}
@@ -349,7 +349,7 @@ const SignUp = () => {
                   'Create Account'
                 )}
               </button>
-            </div>
+            </div> */}
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">

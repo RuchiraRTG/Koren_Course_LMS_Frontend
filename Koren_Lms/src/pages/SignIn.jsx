@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogIn, Eye, EyeOff, Loader } from 'lucide-react';
+import loginImage from '../assets/loginimage.jpg';
+import LMSLOGO from '../assets/LMSLOGO.png';
+import signinimage from '../assets/imagesignin.jpg';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -71,6 +74,7 @@ const SignIn = () => {
         const response = await fetch('http://localhost/signin.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // IMPORTANT: Include cookies for session
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
@@ -114,21 +118,24 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-korean-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-primary-600 rounded-lg flex items-center justify-center">
-            <LogIn className="h-6 w-6 text-white" />
-          </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Welcome Back
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to your Korean LMS account
-          </p>
-        </div>
+    <div className="min-h-screen flex">
+      <div className="w-full lg:w-1/2 bg-gradient-to-br from-primary-50 to-korean-50 flex items-center justify-center overflow-auto">
+        {/* Left Side - Sign In Form */}
+        <div className="flex items-center justify-center p-8 w-full">
+          <div className="max-w-md w-full space-y-8">
+              <div className="text-center">
+                <div className="mx-auto h-[100px] w-[100px] flex items-center justify-center ">
+                  <img src={LMSLOGO} alt="LMS Logo" className="h-[250px] w-[250px] object-contain" />
+                </div>
+                <h2 className="mt-1 text-3xl font-bold text-gray-900">
+                  Welcome Back
+                </h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Sign in to your Korean LMS account
+                </p>
+              </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+              <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {/* Info message (e.g., after successful signup) */}
           {infoMessage && (
             <div className="bg-green-50 border border-green-200 rounded-md p-4">
@@ -238,7 +245,7 @@ const SignIn = () => {
                   <div className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
+                  <span className="px-2 bg-white text-gray-500">Your Account</span>
                 </div>
               </div>
 
@@ -246,15 +253,26 @@ const SignIn = () => {
             </div>
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
+              {/* <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
                 <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-500">
                   Sign up
                 </Link>
-              </p>
+              </p> */}
             </div>
           </div>
         </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Image */}
+  <div className="hidden lg:flex lg:w-1/2 items-center justify-center h-screen" style={{ backgroundColor: '#e1efff' }}>
+        <img 
+          src={signinimage} 
+          alt="Login Our Platform - iDEO Learning Management System" 
+          className="max-h-full max-w-full object-contain"
+        />
       </div>
     </div>
   );

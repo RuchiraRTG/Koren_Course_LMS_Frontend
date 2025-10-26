@@ -1,29 +1,93 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Clock, FileText, Users, Award, CheckCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, Search, Edit2, Trash2, X, Clock, FileText, Award, Loader, AlertCircle } from 'lucide-react';
 
 const Exams = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [studentSearchTerm, setStudentSearchTerm] = useState('');
   const [exams, setExams] = useState([]);
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
+  const [availableQuestions, setAvailableQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // Sample questions for selection (in real app, fetch from backend)
-  const [availableQuestions] = useState([
-    { id: 1, questionText: 'What is "안녕하세요"?', questionType: 'mcq', category: 'Greetings', difficulty: 'Beginner' },
-    { id: 2, questionText: 'Translate "Good morning"', questionType: 'mcq', category: 'Greetings', difficulty: 'Beginner' },
-    { id: 3, questionText: 'Listen and identify the word', questionType: 'voice', category: 'Listening', difficulty: 'Intermediate' },
-    { id: 4, questionText: 'Which particle marks the subject?', questionType: 'mcq', category: 'Grammar', difficulty: 'Intermediate' },
-  ]);
+  // Backend API base (adjust if your PHP lives elsewhere)
+  const API_URL = 'http://localhost/exam.php';
 
-  // Sample students (in real app, fetch from backend)
-  const [availableStudents] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', batch: 'Batch A' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', batch: 'Batch A' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', batch: 'Batch B' },
-    { id: 4, name: 'Sarah Williams', email: 'sarah@example.com', batch: 'Batch B' },
-    { id: 5, name: 'Tom Brown', email: 'tom@example.com', batch: 'Batch A' },
-  ]);
+  // Fetch exams and questions on mount
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
+      setApiError('');
+      try {
+        await Promise.all([fetchExams(), fetchQuestions()]);
+      } catch (e) {
+        // errors handled in functions
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    init();
+  }, []);
+
+  const fetchExams = async () => {
+    try {
+      const res = await fetch(`${API_URL}?action=all`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'Failed to fetch exams');
+
+      // Map backend snake_case to frontend camelCase
+      const mapped = (data.data || []).map((e) => ({
+        id: e.id,
+        examName: e.exam_name,
+        description: e.description || '',
+        examType: e.exam_type,
+        duration: String(e.duration),
+        numberOfQuestions: String(e.number_of_questions),
+        totalMarks: String(e.total_marks),
+        selectedQuestions: e.assigned_questions || [],
+        mcqCount: e.mcq_count ?? 0,
+        voiceCount: e.voice_count ?? 0,
+        createdAt: e.created_at,
+      }));
+      setExams(mapped);
+    } catch (error) {
+      setApiError(
+        `Cannot load exams from ${API_URL}. ${error.message}. Ensure the PHP server is running and CORS headers are enabled.`
+      );
+    }
+  };
+
+  const fetchQuestions = async () => {
+    try {
+      // Optionally filter by examType later; here we get all and filter client-side
+      const res = await fetch(`${API_URL}?action=questions`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'Failed to fetch questions');
+      // Normalize question fields to what this UI expects
+      const qs = (data.data || []).map((q) => ({
+        id: q.id,
+        questionText: q.questionText,
+        questionType: q.questionType, // 'mcq' | 'voice'
+        category: q.category || '',
+        difficulty: q.difficulty || '',
+      }));
+      setAvailableQuestions(qs);
+    } catch (error) {
+      setApiError(
+        `Cannot load questions from ${API_URL}. ${error.message}.`
+      );
+    }
+  };
 
   const [formData, setFormData] = useState({
     examName: '',
@@ -31,9 +95,6 @@ const Exams = () => {
     duration: '30', // in minutes: 30, 60, 120
     numberOfQuestions: '20', // 20, 40, 60
     totalMarks: '',
-    eligibilityType: 'batch', // 'batch' or 'individual'
-    selectedBatch: '',
-    selectedStudents: [],
     selectedQuestions: [],
     mcqCount: 0,
     voiceCount: 0,
@@ -48,18 +109,6 @@ const Exams = () => {
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleStudentToggle = (studentId) => {
-    setFormData(prev => {
-      const isSelected = prev.selectedStudents.includes(studentId);
-      return {
-        ...prev,
-        selectedStudents: isSelected
-          ? prev.selectedStudents.filter(id => id !== studentId)
-          : [...prev.selectedStudents, studentId]
-      };
-    });
   };
 
   const handleQuestionToggle = (questionId) => {
@@ -89,58 +138,69 @@ const Exams = () => {
     });
   };
 
-  const handleSelectAllBatch = () => {
-    if (formData.selectedBatch) {
-      const batchStudents = availableStudents
-        .filter(s => s.batch === formData.selectedBatch)
-        .map(s => s.id);
-      setFormData(prev => ({
-        ...prev,
-        selectedStudents: batchStudents
-      }));
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError('');
+    setSuccessMessage('');
 
-    // Validation
-    if (formData.eligibilityType === 'batch' && !formData.selectedBatch) {
-      alert('Please select a batch');
-      return;
-    }
-
-    if (formData.eligibilityType === 'individual' && formData.selectedStudents.length === 0) {
-      alert('Please select at least one student');
-      return;
-    }
-
+    // Basic validation
     if (formData.selectedQuestions.length === 0) {
-      alert('Please select at least one question');
+      setApiError('Please select at least one question');
       return;
     }
-
     if (formData.selectedQuestions.length > parseInt(formData.numberOfQuestions)) {
-      alert(`You can only select up to ${formData.numberOfQuestions} questions`);
+      setApiError(`You can only select up to ${formData.numberOfQuestions} questions`);
       return;
     }
 
-    if (editingExam) {
-      setExams(exams.map(exam =>
-        exam.id === editingExam.id
-          ? { ...formData, id: exam.id }
-          : exam
-      ));
-    } else {
-      const newExam = {
-        ...formData,
-        id: Date.now(),
-        createdAt: new Date().toISOString()
-      };
-      setExams([...exams, newExam]);
-    }
+    // Build payload compatible with PHP API
+    const payload = {
+      examName: formData.examName,
+      description: formData.description || null,
+      examType: formData.examType,
+      duration: parseInt(formData.duration),
+      numberOfQuestions: parseInt(formData.numberOfQuestions),
+      totalMarks: parseInt(formData.totalMarks),
+      // We don't enforce eligibility in UI; pass a neutral batch label to satisfy backend validation
+      eligibilityType: 'batch',
+      selectedBatch: 'Practice',
+      selectedStudents: [],
+      selectedQuestions: formData.selectedQuestions,
+      mcqCount: formData.mcqCount,
+      voiceCount: formData.voiceCount,
+    };
 
-    resetForm();
+    setIsSubmitting(true);
+    try {
+      let res;
+      if (editingExam) {
+        res = await fetch(API_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, id: editingExam.id }),
+        });
+      } else {
+        res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'Failed to save exam');
+
+      setSuccessMessage(data.message || (editingExam ? 'Exam updated successfully' : 'Exam created successfully'));
+      await fetchExams();
+      setTimeout(() => {
+        resetForm();
+      }, 1000);
+    } catch (error) {
+      setApiError(error.message || 'Failed to save exam');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -150,9 +210,6 @@ const Exams = () => {
       duration: '30',
       numberOfQuestions: '20',
       totalMarks: '',
-      eligibilityType: 'batch',
-      selectedBatch: '',
-      selectedStudents: [],
       selectedQuestions: [],
       mcqCount: 0,
       voiceCount: 0,
@@ -161,18 +218,44 @@ const Exams = () => {
     setEditingExam(null);
     setShowAddModal(false);
     setShowQuestionSelector(false);
-    setStudentSearchTerm('');
+    setApiError('');
+    setSuccessMessage('');
   };
 
   const handleEdit = (exam) => {
+    // exam already mapped to camelCase fields
     setEditingExam(exam);
-    setFormData({ ...exam });
+    setFormData({
+      examName: exam.examName,
+      examType: exam.examType,
+      duration: String(exam.duration),
+      numberOfQuestions: String(exam.numberOfQuestions),
+      totalMarks: String(exam.totalMarks),
+      selectedQuestions: exam.selectedQuestions || [],
+      mcqCount: exam.mcqCount || 0,
+      voiceCount: exam.voiceCount || 0,
+      description: exam.description || '',
+    });
     setShowAddModal(true);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this exam?')) {
-      setExams(exams.filter(exam => exam.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this exam?')) return;
+    setApiError('');
+    setSuccessMessage('');
+    try {
+      const res = await fetch(`${API_URL}?id=${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'Failed to delete exam');
+      setSuccessMessage('Exam deleted successfully');
+      await fetchExams();
+      setTimeout(() => setSuccessMessage(''), 2000);
+    } catch (error) {
+      setApiError(error.message || 'Failed to delete exam');
     }
   };
 
@@ -193,15 +276,7 @@ const Exams = () => {
     return 'MCQ & Voice';
   };
 
-  const getSelectedStudentNames = (exam) => {
-    if (exam.eligibilityType === 'batch') {
-      return `Batch: ${exam.selectedBatch}`;
-    }
-    const students = availableStudents.filter(s => exam.selectedStudents.includes(s.id));
-    return students.map(s => s.name).join(', ');
-  };
-
-  const uniqueBatches = [...new Set(availableStudents.map(s => s.batch))];
+  // No eligibility display needed; practice exam available to all
 
   return (
     <div>
@@ -233,9 +308,34 @@ const Exams = () => {
         </button>
       </div>
 
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+          <p className="text-sm font-medium text-green-800">{successMessage}</p>
+        </div>
+      )}
+
+      {/* API Error Message */}
+      {apiError && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-red-800 mb-1">Connection Error</h3>
+              <div className="text-sm text-red-700 whitespace-pre-line">{apiError}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Exams List */}
       <div className="grid grid-cols-1 gap-4">
-        {filteredExams.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <Loader className="animate-spin h-8 w-8 text-primary-600 mx-auto mb-4" />
+            <p className="text-gray-500">Loading exams...</p>
+          </div>
+        ) : filteredExams.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
             No exams found. Click "Create Exam" to add one.
           </div>
@@ -258,7 +358,7 @@ const Exams = () => {
                     </span>
                     <span className="px-3 py-1 text-sm font-semibold rounded bg-blue-100 text-blue-800 flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      {getDurationLabel(exam.duration)}
+                      {getDurationLabel(String(exam.duration))}
                     </span>
                     <span className="px-3 py-1 text-sm font-semibold rounded bg-green-100 text-green-800 flex items-center gap-1">
                       <FileText className="h-4 w-4" />
@@ -273,13 +373,6 @@ const Exams = () => {
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium text-gray-700">Question Types:</span>
                       <span className="text-gray-600">{exam.mcqCount} MCQ, {exam.voiceCount} Voice</span>
-                    </div>
-                    <div className="flex items-start gap-2 text-sm">
-                      <Users className="h-4 w-4 text-gray-500 mt-0.5" />
-                      <div>
-                        <span className="font-medium text-gray-700">Eligible Students: </span>
-                        <span className="text-gray-600">{getSelectedStudentNames(exam)}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -361,7 +454,28 @@ const Exams = () => {
                       <select
                         name="examType"
                         value={formData.examType}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          handleChange(e);
+                          // When exam type changes, recalc counts and ensure selectedQuestions still valid
+                          setFormData(prev => {
+                            const filteredSelected = (prev.selectedQuestions || []).filter((id) => {
+                              const q = availableQuestions.find((qq) => qq.id === id);
+                              if (!q) return false;
+                              if (e.target.value === 'mcq') return q.questionType === 'mcq';
+                              if (e.target.value === 'voice') return q.questionType === 'voice';
+                              return true;
+                            });
+                            const mcqCount = filteredSelected.filter((id) => {
+                              const q = availableQuestions.find((qq) => qq.id === id);
+                              return q?.questionType === 'mcq';
+                            }).length;
+                            const voiceCount = filteredSelected.filter((id) => {
+                              const q = availableQuestions.find((qq) => qq.id === id);
+                              return q?.questionType === 'voice';
+                            }).length;
+                            return { ...prev, selectedQuestions: filteredSelected, mcqCount, voiceCount };
+                          });
+                        }}
                         className="input-field"
                         required
                       >
@@ -496,133 +610,7 @@ const Exams = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* Student Eligibility */}
-                    <div className="border-t pt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Student Eligibility *
-                      </label>
-                      
-                      <div className="space-y-3">
-                        {/* Eligibility Type */}
-                        <div className="flex gap-4">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="eligibilityType"
-                              value="batch"
-                              checked={formData.eligibilityType === 'batch'}
-                              onChange={handleChange}
-                              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
-                            />
-                            <span className="text-sm text-gray-700">By Batch</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="eligibilityType"
-                              value="individual"
-                              checked={formData.eligibilityType === 'individual'}
-                              onChange={handleChange}
-                              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
-                            />
-                            <span className="text-sm text-gray-700">Individual Students</span>
-                          </label>
-                        </div>
-
-                        {/* Batch Selection */}
-                        {formData.eligibilityType === 'batch' && (
-                          <div>
-                            <select
-                              name="selectedBatch"
-                              value={formData.selectedBatch}
-                              onChange={(e) => {
-                                handleChange(e);
-                                setFormData(prev => ({ ...prev, selectedStudents: [] }));
-                              }}
-                              className="input-field"
-                              required
-                            >
-                              <option value="">Select Batch</option>
-                              {uniqueBatches.map((batch) => (
-                                <option key={batch} value={batch}>{batch}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
-                        {/* Individual Student Selection */}
-                        {formData.eligibilityType === 'individual' && (
-                          <div>
-                            {/* Student Search */}
-                            <div className="mb-3">
-                              <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <input
-                                  type="text"
-                                  placeholder="Search students by name or email..."
-                                  value={studentSearchTerm}
-                                  onChange={(e) => setStudentSearchTerm(e.target.value)}
-                                  className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Student List */}
-                            <div className="border rounded-lg p-4 bg-gray-50 max-h-64 overflow-y-auto">
-                              <div className="space-y-2">
-                                {availableStudents
-                                  .filter(student => {
-                                    const searchLower = studentSearchTerm.toLowerCase();
-                                    return student.name.toLowerCase().includes(searchLower) ||
-                                           student.email.toLowerCase().includes(searchLower);
-                                  })
-                                  .map((student) => (
-                                  <label
-                                    key={student.id}
-                                    className="flex items-center gap-3 p-2 bg-white rounded border border-gray-200 hover:border-primary-300 cursor-pointer"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={formData.selectedStudents.includes(student.id)}
-                                      onChange={() => handleStudentToggle(student.id)}
-                                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                                    />
-                                    <div className="flex-1">
-                                      <p className="text-sm font-medium text-gray-900">{student.name}</p>
-                                      <p className="text-xs text-gray-500">{student.email} • {student.batch}</p>
-                                    </div>
-                                  </label>
-                                ))}
-                                {availableStudents.filter(student => {
-                                  const searchLower = studentSearchTerm.toLowerCase();
-                                  return student.name.toLowerCase().includes(searchLower) ||
-                                         student.email.toLowerCase().includes(searchLower);
-                                }).length === 0 && (
-                                  <p className="text-sm text-gray-500 text-center py-4">
-                                    No students found
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Selected Count */}
-                        {formData.eligibilityType === 'batch' && formData.selectedBatch && (
-                          <p className="text-sm text-gray-600">
-                            <CheckCircle className="h-4 w-4 inline text-green-600 mr-1" />
-                            {availableStudents.filter(s => s.batch === formData.selectedBatch).length} students in {formData.selectedBatch}
-                          </p>
-                        )}
-                        {formData.eligibilityType === 'individual' && formData.selectedStudents.length > 0 && (
-                          <p className="text-sm text-gray-600">
-                            <CheckCircle className="h-4 w-4 inline text-green-600 mr-1" />
-                            {formData.selectedStudents.length} student(s) selected
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                    {/* No Student Eligibility: Exams are practice and available to all */}
                   </div>
 
                   <div className="mt-6 flex justify-end space-x-3">
@@ -635,9 +623,10 @@ const Exams = () => {
                     </button>
                     <button
                       type="submit"
-                      className="btn-primary"
+                      className="btn-primary disabled:opacity-60"
+                      disabled={isSubmitting}
                     >
-                      {editingExam ? 'Update Exam' : 'Create Exam'}
+                      {isSubmitting ? (editingExam ? 'Updating...' : 'Creating...') : (editingExam ? 'Update Exam' : 'Create Exam')}
                     </button>
                   </div>
                 </form>
