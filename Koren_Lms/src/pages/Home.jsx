@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Award, BarChart3, Bell, Search, LogOut, FileQuestion } from 'lucide-react';
 import LMSLogo from '../assets/LMSLOGO.png';
 import { logoutUser } from '../services/authService';
+import Footer from '../components/Footer';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -196,6 +197,8 @@ const Home = () => {
           </div>
         </div>
       </main>
+
+      <Footer logoSrc={LMSLogo} logoAlt="Koren LMS Logo" logoWidth="w-32" />
     </div>
   );
 };
