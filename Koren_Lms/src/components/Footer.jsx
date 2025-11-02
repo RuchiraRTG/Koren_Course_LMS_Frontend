@@ -41,16 +41,16 @@ export default function Footer({ logoSrc, logoAlt = 'Company Logo', logoWidth = 
             <h3 className="text-white font-semibold mb-2 text-sm">Quick Links</h3>
             <ul className="space-y-1">
               <li>
-                <a href="/" className="text-sm hover:text-primary-400 transition-colors">Home</a>
+                <a href="/home" className="text-sm hover:text-primary-400 transition-colors">Home</a>
               </li>
               <li>
-                <a href="/about" className="text-sm hover:text-primary-400 transition-colors">About Us</a>
+                <a href="/home" className="text-sm hover:text-primary-400 transition-colors">About Us</a>
               </li>
               <li>
-                <a href="/courses" className="text-sm hover:text-primary-400 transition-colors">Courses</a>
+                <a href="/home" className="text-sm hover:text-primary-400 transition-colors">Courses</a>
               </li>
               <li>
-                <a href="/contact" className="text-sm hover:text-primary-400 transition-colors">Contact</a>
+                <a href="/home" className="text-sm hover:text-primary-400 transition-colors">Contact</a>
               </li>
             </ul>
           </div>
@@ -60,16 +60,16 @@ export default function Footer({ logoSrc, logoAlt = 'Company Logo', logoWidth = 
             <h3 className="text-white font-semibold mb-2 text-sm">Resources</h3>
             <ul className="space-y-1">
               <li>
-                <a href="/faq" className="text-sm hover:text-primary-400 transition-colors">FAQ</a>
+                <a href="/home" className="text-sm hover:text-primary-400 transition-colors">FAQ</a>
               </li>
               <li>
-                <a href="/blog" className="text-sm hover:text-primary-400 transition-colors">Blog</a>
+                <a href="/home" className="text-sm hover:text-primary-400 transition-colors">Blog</a>
               </li>
               <li>
-                <a href="/support" className="text-sm hover:text-primary-400 transition-colors">Support</a>
+                <a href="/home" className="text-sm hover:text-primary-400 transition-colors">Support</a>
               </li>
               <li>
-                <a href="/docs" className="text-sm hover:text-primary-400 transition-colors">Documentation</a>
+                <a href="/home" className="text-sm hover:text-primary-400 transition-colors">Documentation</a>
               </li>
             </ul>
           </div>
@@ -107,9 +107,9 @@ export default function Footer({ logoSrc, logoAlt = 'Company Logo', logoWidth = 
           </p>
           
           <div className="flex gap-4 text-xs">
-            <a href="/privacy" className="hover:text-primary-400 transition-colors">Privacy Policy</a>
-            <a href="/terms" className="hover:text-primary-400 transition-colors">Terms of Service</a>
-            <a href="/cookies" className="hover:text-primary-400 transition-colors">Cookie Policy</a>
+            <a href="/home" className="hover:text-primary-400 transition-colors">Privacy Policy</a>
+            <a href="/home" className="hover:text-primary-400 transition-colors">Terms of Service</a>
+            <a href="/home" className="hover:text-primary-400 transition-colors">Cookie Policy</a>
           </div>
         </div>
       </div>
