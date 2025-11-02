@@ -102,7 +102,7 @@ const Home = () => {
             <div className="card">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">Continue Learning</h3>
-                <Link to="/courses" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <Link to="/home" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                   View all
                 </Link>
               </div>
@@ -174,26 +174,22 @@ const Home = () => {
               <FileQuestion className="h-8 w-8 text-primary-600 mx-auto mb-2" />
               <p className="text-sm font-bold text-primary-700">Take Mock Exam</p>
             </Link>
-            
-            <Link to="/courses" className="card text-center hover:bg-gray-50 transition-colors">
+            <button className="card text-center cursor-not-allowed opacity-60" disabled>
               <BookOpen className="h-8 w-8 text-primary-600 mx-auto mb-2" />
               <p className="text-sm font-medium text-gray-900">Browse Courses</p>
-            </Link>
-            
-            <Link to="/practice" className="card text-center hover:bg-gray-50 transition-colors">
+            </button>
+            <button className="card text-center cursor-not-allowed opacity-60" disabled>
               <Award className="h-8 w-8 text-green-600 mx-auto mb-2" />
               <p className="text-sm font-medium text-gray-900">Practice Quiz</p>
-            </Link>
-            
-            <Link to="/schedule" className="card text-center hover:bg-gray-50 transition-colors">
+            </button>
+            <button className="card text-center cursor-not-allowed opacity-60" disabled>
               <BarChart3 className="h-8 w-8 text-purple-600 mx-auto mb-2" />
               <p className="text-sm font-medium text-gray-900">View Progress</p>
-            </Link>
-            
-            <Link to="/community" className="card text-center hover:bg-gray-50 transition-colors">
+            </button>
+            <button className="card text-center cursor-not-allowed opacity-60" disabled>
               <Users className="h-8 w-8 text-orange-600 mx-auto mb-2" />
               <p className="text-sm font-medium text-gray-900">Community</p>
-            </Link>
+            </button>
           </div>
         </div>
       </main>
