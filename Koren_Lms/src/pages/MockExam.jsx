@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileQuestion, ArrowLeft, Music, CheckSquare, Mic } from 'lucide-react';
+import Footer from '../components/Footer';
+import LMSLogo from '../assets/LMSLOGO.png';
 
 const MockExam = () => {
   const navigate = useNavigate();
@@ -56,7 +58,7 @@ const MockExam = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -283,6 +285,7 @@ const MockExam = () => {
           </div>
         </div>
       </main>
+  <Footer logoSrc={LMSLogo} logoAlt="Koren LMS Logo" logoWidth="w-32" />
     </div>
   );
 };
