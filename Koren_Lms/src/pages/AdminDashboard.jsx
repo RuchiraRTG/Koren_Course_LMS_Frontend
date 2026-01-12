@@ -10,7 +10,8 @@ import {
   Menu, 
   X,
   ChevronDown,
-  AlertCircle
+  AlertCircle,
+  TrendingUp
 } from 'lucide-react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -60,6 +61,7 @@ const AdminDashboard = () => {
     { name: 'Courses', path: '/admin/courses', icon: BookOpen },
     { name: 'Questions', path: '/admin/questions', icon: FileQuestion },
     { name: 'Exams', path: '/admin/exams', icon: ClipboardList },
+    { name: 'Student Progress', path: '/admin/student-progress', icon: TrendingUp },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];
 
