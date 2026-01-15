@@ -12,6 +12,7 @@ import Students from './pages/Students';
 import Questions from './pages/Questions';
 import Exams from './pages/Exams';
 import StudentProgress from './pages/StudentProgress';
+import StudentProgressTable from './pages/StudentProgressTable';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/mock-exam" element={<MockExam />} />
         <Route path="/take-exam" element={<TakeExam />} />
+        <Route path="/student-progress-table" element={<StudentProgressTable />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />}>
