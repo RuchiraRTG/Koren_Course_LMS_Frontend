@@ -80,15 +80,15 @@ export default function Footer({ logoSrc, logoAlt = 'Company Logo', logoWidth = 
             <ul className="space-y-2">
               <li className="flex items-center gap-2">
                 <Phone size={16} className="text-primary-400" />
-                <a href="tel:+1234567890" className="text-sm hover:text-primary-400 transition-colors">+1 (234) 567-890</a>
+                <a href="tel:+1234567890" className="text-sm hover:text-primary-400 transition-colors">070 4 655 366</a>
               </li>
               <li className="flex items-start gap-2">
                 <Mail size={16} className="text-primary-400 mt-0.5" />
-                <a href="mailto:info@koren.com" className="text-sm hover:text-primary-400 transition-colors">info@koren.com</a>
+                <a href="mailto:info@koren.com" className="text-sm hover:text-primary-400 transition-colors">Info@idedsl.com</a>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin size={16} className="text-primary-400 mt-0.5" />
-                <span className="text-sm">123 Education Lane<br />Learning City, LC 12345</span>
+                <span className="text-sm">448 / B, Nakanda,<br />Ahangamam Sri Lanka</span>
               </li>
             </ul>
           </div>
