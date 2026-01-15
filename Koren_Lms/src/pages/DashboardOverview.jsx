@@ -1,7 +1,10 @@
 import React from 'react';
-import { Users, BookOpen, FileQuestion, TrendingUp, Calendar, Award } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, BookOpen, FileQuestion, TrendingUp, Calendar, Award, Home } from 'lucide-react';
 
 const DashboardOverview = () => {
+  const navigate = useNavigate();
+  
   const stats = [
     { title: 'Total Students', value: '248', change: '+12%', icon: Users, color: 'bg-blue-500' },
     { title: 'Total Courses', value: '12', change: '+2', icon: BookOpen, color: 'bg-green-500' },
@@ -25,9 +28,18 @@ const DashboardOverview = () => {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Overview</h2>
-        <p className="text-gray-600">Welcome back! Here's what's happening today.</p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Overview</h2>
+          <p className="text-gray-600">Welcome back! Here's what's happening today.</p>
+        </div>
+        <button
+          onClick={() => navigate('/home')}
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-sm"
+        >
+          <Home className="h-4 w-4" />
+          Back to Home
+        </button>
       </div>
 
       {/* Stats Grid */}
