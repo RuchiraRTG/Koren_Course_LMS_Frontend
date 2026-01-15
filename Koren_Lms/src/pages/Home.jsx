@@ -184,10 +184,10 @@ const Home = () => {
               <FileQuestion className="h-8 w-8 text-primary-600 mx-auto mb-2" />
               <p className="text-sm font-bold text-primary-700">Take Mock Exam</p>
             </Link>
-            <button className="card text-center hover:bg-primary-50 transition-colors border-2 border-primary-200">
+            <Link to="/student-progress-table" className="card text-center hover:bg-primary-50 transition-colors border-2 border-primary-200">
               <BarChart3 className="h-8 w-8 text-primary-600 mx-auto mb-2" />
               <p className="text-sm font-bold text-primary-700">Your Progress</p>
-            </button>
+            </Link>
           </div>
         </div>
       </main>
