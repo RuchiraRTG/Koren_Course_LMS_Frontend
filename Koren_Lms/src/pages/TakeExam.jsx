@@ -17,6 +17,40 @@ const TakeExam = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Countdown timer state
+  const EXAM_SECONDS_PER_QUESTION = 90; // 1.5 minutes per question
+  const initialTotalSeconds = Math.max(
+    1,
+    ((parseInt(numberOfQuestions, 10) || (questions ? questions.length : 0) || 20) * EXAM_SECONDS_PER_QUESTION)
+  );
+  const [remainingSeconds, setRemainingSeconds] = useState(initialTotalSeconds);
+
+  // Start countdown on mount
+  useEffect(() => {
+    if (!questions || questions.length === 0 || showResults) return;
+
+    const intervalId = setInterval(() => {
+      setRemainingSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(intervalId);
+          // Auto-submit when time runs out
+          handleSubmit(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions, showResults]);
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   // If no questions, redirect back
   useEffect(() => {
     if (!questions || questions.length === 0) {
@@ -64,8 +98,8 @@ const TakeExam = () => {
     return questions.every(q => userAnswers.hasOwnProperty(q.id));
   };
 
-  const handleSubmit = async () => {
-    if (!areAllQuestionsAnswered()) {
+  const handleSubmit = async (force = false) => {
+    if (!force && !areAllQuestionsAnswered()) {
       alert('Please answer all questions before submitting!');
       return;
     }
@@ -140,6 +174,10 @@ const TakeExam = () => {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-6">
+              {/* Countdown timer */}
+              <div className="text-xs sm:text-sm font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
+                Time Left: {formatTime(remainingSeconds)}
+              </div>
               <div className="text-xs sm:text-sm">
                 <span className="text-gray-600 hidden sm:inline">Progress: </span>
                 <span className="font-semibold text-gray-900">
@@ -300,7 +338,7 @@ const TakeExam = () => {
 
                 {currentQuestionIndex === questions.length - 1 ? (
                   <button
-                    onClick={handleSubmit}
+                    onClick={() => handleSubmit()}
                     disabled={submitting || !areAllQuestionsAnswered()}
                     className={`btn-primary text-sm sm:text-base ${(submitting || !areAllQuestionsAnswered()) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
