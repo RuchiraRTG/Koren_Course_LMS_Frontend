@@ -1,15 +1,32 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { LogIn, Eye, EyeOff, Loader } from 'lucide-react';
+import loginImage from '../assets/loginimage.jpg';
+import LMSLOGO from '../assets/LMSLOGO.png';
+import signinimage from '../assets/imagesignin.jpg';
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiErrors, setApiErrors] = useState([]);
+  const [infoMessage, setInfoMessage] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
+
+  // On load, if redirected from SignUp, show message and prefill email
+  useEffect(() => {
+    if (location.state) {
+      const { message, email } = location.state;
+      if (message) setInfoMessage(message);
+      if (email) setFormData(prev => ({ ...prev, email }));
+    }
+  }, [location.state]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,21 +59,58 @@ const SignIn = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiErrors([]);
+    setInfoMessage('');
     const newErrors = validateForm();
 
     if (Object.keys(newErrors).length === 0) {
-      // Here you would typically authenticate with your backend
-      console.log('Sign in data:', formData);
-      
-      // Check if it's admin credentials (simple check for demo)
-      if (formData.email === 'admin@korean-lms.com') {
-        // Redirect to admin dashboard
-        navigate('/admin');
-      } else {
-        // Redirect to home page for regular users
-        navigate('/home');
+      try {
+        setIsLoading(true);
+
+        // Assumption: login endpoint is http://localhost/signin.php
+        // Adjust if your backend uses a different URL (e.g., /login.php)
+        const response = await fetch('http://localhost/signin.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // IMPORTANT: Include cookies for session
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Persist session based on Remember me
+          const storage = rememberMe ? window.localStorage : window.sessionStorage;
+          try {
+            if (data.data?.session_token) {
+              storage.setItem('session_token', data.data.session_token);
+            }
+            storage.setItem('user', JSON.stringify(data.data || {}));
+          } catch (storageErr) {
+            console.warn('Storage error:', storageErr);
+          }
+
+          // Navigate to a frontend route. Map backend redirect_url if needed.
+          navigate('/home');
+        } else {
+          if (Array.isArray(data.errors) && data.errors.length) {
+            setApiErrors(data.errors);
+          } else if (data.message) {
+            setApiErrors([data.message]);
+          } else {
+            setApiErrors(['Login failed. Please try again.']);
+          }
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        setApiErrors(['Network error. Please check your connection and try again.']);
+      } finally {
+        setIsLoading(false);
       }
     } else {
       setErrors(newErrors);
@@ -64,21 +118,42 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-korean-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-primary-600 rounded-lg flex items-center justify-center">
-            <LogIn className="h-6 w-6 text-white" />
-          </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Welcome Back
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to your Korean LMS account
-          </p>
-        </div>
+    <div className="min-h-screen flex">
+      <div className="w-full lg:w-1/2 bg-gradient-to-br from-primary-50 to-korean-50 flex items-center justify-center overflow-auto">
+        {/* Left Side - Sign In Form */}
+        <div className="flex items-center justify-center p-8 w-full">
+          <div className="max-w-md w-full space-y-8">
+              <div className="text-center">
+                <div className="mx-auto h-[100px] w-[100px] flex items-center justify-center ">
+                  <img src={LMSLOGO} alt="LMS Logo" className="h-[250px] w-[250px] object-contain" />
+                </div>
+                <h2 className="mt-1 text-3xl font-bold text-gray-900">
+                  Welcome Back
+                </h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Sign in to your Korean LMS account
+                </p>
+              </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+              <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Info message (e.g., after successful signup) */}
+          {infoMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <p className="text-sm text-green-800">{infoMessage}</p>
+            </div>
+          )}
+
+          {/* API error messages */}
+          {apiErrors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <h3 className="text-sm font-medium text-red-800">Login failed:</h3>
+              <ul className="mt-2 list-disc pl-5 text-sm text-red-700 space-y-1">
+                {apiErrors.map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="card">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -128,17 +203,17 @@ const SignIn = () => {
             </div>
 
             <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center">
+              <label className="flex items-center">
                 <input
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
+                <span className="ml-2 block text-sm text-gray-900">Remember me</span>
+              </label>
 
               <div className="text-sm">
                 <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
@@ -150,9 +225,17 @@ const SignIn = () => {
             <div className="mt-6">
               <button
                 type="submit"
-                className="w-full btn-primary"
+                disabled={isLoading}
+                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Sign In
+                {isLoading ? (
+                  <>
+                    <Loader className="animate-spin h-4 w-4 mr-2" />
+                    Signing In...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </div>
 
@@ -162,29 +245,34 @@ const SignIn = () => {
                   <div className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
+                  <span className="px-2 bg-white text-gray-500">Your Account</span>
                 </div>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                  <p><strong>Admin:</strong> admin@korean-lms.com</p>
-                  <p><strong>Student:</strong> student@korean-lms.com</p>
-                  <p><strong>Password:</strong> password123</p>
-                </div>
-              </div>
+              {/* demo accounts removed */}
             </div>
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
+              {/* <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
                 <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-500">
                   Sign up
                 </Link>
-              </p>
+              </p> */}
             </div>
           </div>
         </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Image */}
+  <div className="hidden lg:flex lg:w-1/2 items-center justify-center h-screen" style={{ backgroundColor: '#e1efff' }}>
+        <img 
+          src={signinimage} 
+          alt="Login Our Platform - iDEO Learning Management System" 
+          className="max-h-full max-w-full object-contain"
+        />
       </div>
     </div>
   );

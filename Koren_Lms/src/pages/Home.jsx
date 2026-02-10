@@ -1,8 +1,31 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Award, BarChart3, Bell, Search, LogOut, FileQuestion } from 'lucide-react';
+import LMSLogo from '../assets/LMSLOGO.png';
+import heroSection from '../assets/herosection.png';
+import { logoutUser, getCurrentUser } from '../services/authService';
+import Footer from '../components/Footer';
 
 const Home = () => {
+  const navigate = useNavigate();
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      // Try to get full name from various possible field names
+      const fullName = 
+        user.fullName || 
+        user.full_name || 
+        (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '') ||
+        (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : '') ||
+        user.name || 
+        user.username || 
+        'User';
+      setUserName(fullName);
+    }
+  }, []);
+
   const stats = [
     { title: 'Total Courses', value: '12', icon: BookOpen, color: 'bg-blue-500' },
     { title: 'Active Students', value: '248', icon: Users, color: 'bg-green-500' },
@@ -23,15 +46,13 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen" style={{ backgroundColor: '#fffdfdff' }}>
       {/* Navigation Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-primary-600 rounded flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-white" />
-              </div>
+              <img src={LMSLogo} alt="LMS Logo" className="h-10 w-10 object-contain" />
               <h1 className="ml-3 text-xl font-bold text-gray-900">Korean LMS</h1>
             </div>
             
@@ -51,11 +72,17 @@ const Home = () => {
               </button>
               
               <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-700">JD</span>
-                </div>
-                <span className="text-sm font-medium text-gray-700">John Doe</span>
-                <button className="text-gray-400 hover:text-gray-600">
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="flex items-center space-x-2 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <span className="text-sm font-medium text-gray-700">{userName}</span>
+                </button>
+                <button 
+                  onClick={() => logoutUser(navigate)}
+                  className="text-gray-400 hover:text-red-600 transition-colors"
+                  title="Sign Out"
+                >
                   <LogOut className="h-5 w-5" />
                 </button>
               </div>
@@ -64,102 +91,88 @@ const Home = () => {
         </div>
       </header>
 
-      Main Content
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            안녕하세요! Welcome back, John 👋
-          </h2>
-          <p className="text-gray-600">
-            Continue your Korean language learning journey
-          </p>
-        </div>
+      
+  <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Hero Section */}
+        <style>{`
+          @keyframes slideInLeft {
+            from {
+              opacity: 0;
+              transform: translateX(-50px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+          @keyframes slideInRight {
+            from {
+              opacity: 0;
+              transform: translateX(50px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+          @keyframes fadeInScale {
+            from {
+              opacity: 0;
+              transform: scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          .animate-slide-left {
+            animation: slideInLeft 0.8s ease-out;
+          }
+          .animate-slide-right {
+            animation: slideInRight 0.8s ease-out 0.2s backwards;
+          }
+          .animate-fade-scale {
+            animation: fadeInScale 0.8s ease-out 0.4s backwards;
+          }
+        `}</style>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="card">
-              <div className="flex items-center">
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <stat.icon className="h-6 w-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-12">
+          {/* Left Side - Text Content */}
+          <div className="animate-slide-left">
+            <div className="mb-6">
+              <h1 className="text-5xl lg:text-6xl font-bold text-primary-600 mb-4 leading-tight">
+                Korean <br /> LMS
+              </h1>
+              <p className="text-xl text-gray-700 mb-2"> The Ideal Platform for</p>
+              <p className="text-2xl font-semibold text-gray-900">Expanding Knowledge</p>
             </div>
-          ))}
-        </div>
+            <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+              Welcome, <span className="font-semibold text-primary-600">{userName}!</span> Continue your learning journey with our comprehensive Korean language courses.
+            </p>
+            <button className="btn-primary inline-block px-8 py-3 rounded-lg font-semibold transition-all hover:shadow-lg">
+              Start Learning
+            </button>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Courses */}
-          <div className="lg:col-span-2">
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Continue Learning</h3>
-                <Link to="/courses" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                  View all
-                </Link>
-              </div>
-              
-              <div className="space-y-4">
-                {recentCourses.map((course) => (
-                  <div key={course.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">{course.title}</h4>
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                        {course.level}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 mr-4">
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${course.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <span className="text-sm font-medium text-gray-600">
-                        {course.progress}%
-                      </span>
-                    </div>
-                    
-                    <button className="mt-3 w-full btn-primary">
-                      Continue Learning
-                    </button>
-                  </div>
-                ))}
+          {/* Right Side - Hero Image */}
+          <div className="animate-fade-scale flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-300 to-primary-600 rounded-3xl blur-2xl opacity-30 transform -rotate-6"></div>
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl w-full max-w-2xl">
+                <img 
+                  src={heroSection} 
+                  alt="Hero Section" 
+                  className="w-full h-auto object-cover rounded-3xl" 
+                />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Announcements */}
-          <div className="lg:col-span-1">
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Announcements</h3>
-                <Bell className="h-5 w-5 text-gray-400" />
-              </div>
-              
-              <div className="space-y-4">
-                {announcements.map((announcement) => (
-                  <div key={announcement.id} className="border-l-4 border-primary-500 pl-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-1">
-                      {announcement.title}
-                    </h4>
-                    <p className="text-xs text-gray-500">{announcement.date}</p>
-                  </div>
-                ))}
-              </div>
-              
-              <button className="mt-6 w-full btn-secondary">
-                View All Announcements
-              </button>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Photo Upload Section */}
+          <div className="lg:col-span-2">
+            {/* Add your photo upload component here */}
           </div>
         </div>
 
@@ -171,29 +184,15 @@ const Home = () => {
               <FileQuestion className="h-8 w-8 text-primary-600 mx-auto mb-2" />
               <p className="text-sm font-bold text-primary-700">Take Mock Exam</p>
             </Link>
-            
-            <Link to="/courses" className="card text-center hover:bg-gray-50 transition-colors">
-              <BookOpen className="h-8 w-8 text-primary-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">Browse Courses</p>
-            </Link>
-            
-            <Link to="/practice" className="card text-center hover:bg-gray-50 transition-colors">
-              <Award className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">Practice Quiz</p>
-            </Link>
-            
-            <Link to="/schedule" className="card text-center hover:bg-gray-50 transition-colors">
-              <BarChart3 className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">View Progress</p>
-            </Link>
-            
-            <Link to="/community" className="card text-center hover:bg-gray-50 transition-colors">
-              <Users className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">Community</p>
+            <Link to="/student-progress-table" className="card text-center hover:bg-primary-50 transition-colors border-2 border-primary-200">
+              <BarChart3 className="h-8 w-8 text-primary-600 mx-auto mb-2" />
+              <p className="text-sm font-bold text-primary-700">Your Progress</p>
             </Link>
           </div>
         </div>
       </main>
+
+      <Footer logoSrc={LMSLogo} logoAlt="Koren LMS Logo" logoWidth="w-32" />
     </div>
   );
 };
